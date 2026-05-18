@@ -89,9 +89,10 @@ def main():
 
     detector = ColorDetector(config)
 
-    # Picamera2 "RGB888" actually delivers the array as numpy RGB. OpenCV wants
-    # BGR, so we convert once per frame below. (Using cvtColor avoids relying on
-    # any of the well-known Picamera2 format-name quirks.)
+    # Picamera2 quirk: requesting "RGB888" actually yields a numpy array whose
+    # channel order is B, G, R — i.e. already what OpenCV expects. So we do NOT
+    # cvtColor afterwards; an extra swap here would flip R and B and break red
+    # detection while leaving green intact (green sits in the middle channel).
     picam2 = Picamera2()
     cam_cfg = picam2.create_preview_configuration(
         main={"size": config.CAMERA_RESOLUTION, "format": "RGB888"}
@@ -117,11 +118,11 @@ def main():
 
     try:
         while True:
-            # Grab + colour-convert to BGR
-            frame_rgb = picam2.capture_array()
-            if frame_rgb.shape[2] == 4:           # drop alpha if format gave us 4 channels
-                frame_rgb = frame_rgb[:, :, :3]
-            frame = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+            # Picamera2 returns BGR-ordered data here (despite the "RGB888" name).
+            # Feed it straight into OpenCV — no cvtColor.
+            frame = picam2.capture_array()
+            if frame.shape[2] == 4:           # drop alpha if format gave us 4 channels
+                frame = frame[:, :, :3]
 
             # Vertical reference line at the frame's horizontal center
             cv2.line(frame, (detector.frame_center_x, 0),
