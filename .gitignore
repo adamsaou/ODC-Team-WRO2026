@@ -217,6 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Claude Code (AI assistant) — never commit
+.claude/
+
 # === WRO 2026 project-specific ===
 
 # OS junk
